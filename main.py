@@ -36,17 +36,17 @@ def StrToJson(type,str):
     return j
 
 def DownloadFile(url):
-    local_filename = url.split('/')[-1]
-    print(local_filename)
+    file = url.split('/')[-1]
+    print(file)
     r = requests.Session()
     # NOTE the stream=True parameter
     r = r.get(url, stream=True)
-    with open(local_filename, 'wb') as f:
+    with open(file, 'wb') as f:
         for chunk in r.iter_content(chunk_size=1024):
             if chunk: # filter out keep-alive new chunks
                 f.write(chunk)
                 #f.flush() commented by recommendation from J.F.Sebastian
-    return local_filename
+    return file
 
 def RemoveFile(local_filename):
     os.remove(local_filename)
