@@ -37,8 +37,9 @@ class MyServer(BaseHTTPRequestHandler):
     def do_POST(self):
         if (self.headers.get('UUID') == UUID):
             if self.path.endswith("/Commands"):
+                print('Got POST Command')
                 file = open("commands.txt","a+")
-                f.write()
+                file.write()
 
 
 
