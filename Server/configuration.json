@@ -1,0 +1,9 @@
+{
+	"Server": "localhost",
+	"Port": 80,
+	"UUID": "5a968c26-b565-4b65-8445-9e87780cb8f9-01",
+	"MaliciousPath":"/MaliciousPath",
+	"Commands":
+		["systeminfo","ipconfig"],
+	"MaliciousURL": "localhost/MaliciousPath"
+}

