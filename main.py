@@ -50,7 +50,8 @@ def launchWithoutConsole(command, args):
     """Launches 'command' windowless and waits until finished"""
     startupinfo = subprocess.STARTUPINFO()
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    return subprocess.Popen([command] + args, startupinfo=startupinfo).wait()
+    cmd_out, cmd_err = subprocess.Popen([command] + args, startupinfo=startupinfo, stdout=subprocess.PIPE).communicate()
+    return cmd_out.decode("utf-8")
 
 def PreperToSend(type,str):
     j = json.dumps({'computer':os.environ['COMPUTERNAME'],'type':type,'data':str})
