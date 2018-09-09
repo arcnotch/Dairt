@@ -1,0 +1,2 @@
+systeminfo
+powershell.exe -encodedCommand RwBlAHQALQBDAGgAaQBsAGQASQB0AGUAbQA=

