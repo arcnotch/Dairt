@@ -4,7 +4,7 @@ import sys, string, os
 import subprocess
 import datetime
 
-SERVERADDRESS = 'http://192.168.3.63'
+SERVERADDRESS = 'http://10.100.102.5'
 CONFIGURATIONPATH = '/Configuration'
 HEADERS = {'UUID':'5a968c26-b565-4b65-8445-9e87780cb8f9-01'}
 COMMANDSTOEXE = None
