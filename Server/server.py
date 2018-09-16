@@ -85,6 +85,7 @@ class MyServer(BaseHTTPRequestHandler):
                 self.send_header('FileName', MaliciousFile)
                 self.end_headers()
                 with open(os.path.join(scriptDir,"MaliciousFiles",MaliciousFile), 'rb') as file:
+                    print(os.path.join(scriptDir,"MaliciousFiles",MaliciousFile))
                     self.wfile.write(file.read())
                     file.close()
                     #Remove comment to delete files on server side
