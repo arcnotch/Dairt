@@ -50,9 +50,10 @@ class MyServer(BaseHTTPRequestHandler):
             if self.path.endswith("/GetFile"):
                 self.send_response(200)
                 self.send_header('Content-type', 'application/html')
-                self.send_header('FileName', File.split('\\')[-1])
+                self.send_header('FileName', File)
+                abs_file_path = os.path.join(scriptDir, File)
                 self.end_headers()
-                with open(os.path.join(File), 'rb') as file:
+                with open(os.path.join(abs_file_path), 'rb') as file:
                     self.wfile.write(file.read())
                 #self.wfile.write(open().read(), 'rb'))
                 return

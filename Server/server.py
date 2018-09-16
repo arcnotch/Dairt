@@ -99,9 +99,10 @@ class MyServer(BaseHTTPRequestHandler):
             if self.path.endswith("/Commands"):
                 #print('Got POST Command')
                 self.data_string = self.rfile.read(int(self.headers['Content-Length']))
+                #print(self.data_string)
                 self.send_response(200)
                 self.end_headers()
-                data = json.loads(self.data_string)
+                data = json.loads(self.data_string.decode('utf-8'))
                 print('New Data recieved from '+data['computer'])
                 with open(os.path.join(scriptDir, "CommandsData",data['computer']+".dat"), "ab+") as outfile:
                     outfile.write((data['computer']+','+data['type']+','+data['data']).encode())

