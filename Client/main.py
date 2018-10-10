@@ -4,9 +4,9 @@ import sys, string, os
 import subprocess
 import datetime
 
-SERVERADDRESS = 'http://104.237.4.83'
+SERVERADDRESS = 'http://IP'
 CONFIGURATIONPATH = '/Configuration'
-HEADERS = {'UUID':'5a968c26-b565-4b65-8445-9e87780cb8f9-01'}
+HEADERS = {'UUID':'UUID-01'}
 COMMANDSTOEXE = None
 MALICIOUSURL = None
 

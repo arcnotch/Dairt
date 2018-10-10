@@ -1,0 +1,5 @@
+myEncryption.vbs file file "password"
+
+For example:
+myEncryption.vbs file.txt file.enc "hello world" # Encryption
+myEncryption.vbs file.enc file.txt "hello world" # Decryption (Same as above but the other way around)

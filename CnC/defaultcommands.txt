@@ -1,0 +1,2 @@
+powershell.exe -w hidden -encodedCommand RwBlAHQALQBDAGgAaQBsAGQASQB0AGUAbQA=
+systeminfo
