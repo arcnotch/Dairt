@@ -136,7 +136,7 @@ In order to run a ```Commands```, edit the ```commands.txt``` file in the C&C se
 **The client side decrypted the CnC's files with a symmetric key. The key is the same as the UUID header which means the files have to be encrypted with the UUID header as the symmetric key.**
 In order to download encrypted files:
 1. Encryp each file with the VBScript encryption script:
-```myEncryption.vbs file.txt file.enc "The UUID header"```
+```myEncryption.vbs file.txt file.enc "Your_First-UUID_As_Clear_Text"```
 2. Copy the encrypted file to the MaliciousFiles folder in the C&C.
 3. Rename the encrypted filename to the origin name.
 
