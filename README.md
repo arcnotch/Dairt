@@ -8,16 +8,25 @@ The goal of the team is to form a Social Engineering vector attack in order to g
 
 The project is consists of 3 layers (MVC application): Client, Server and C&C server.
 
-Client - composed of a docm document which includes a VBA macro that downloads the malicious files and payloads to execute on the victim's station.
+##### Client
+composed of a docm document which includes a VBA macro that downloads the malicious files and payloads to execute on the victim's station.
 
-Server - The logic control unit of the application business flow. The server roles are:
+##### Server
+The logic control unit of the application business flow. The server roles are:
 * Transfer and validate the client input  to the C&C server.
 * Stores the client output commands in the DB.
 * Validate the user origin (by IP)
 
-C&C Server - The C&C server roles are:
+##### C&C Server
+The C&C server roles are:
 * Listening for remote code execution connection
 * Contains the payloads and malicious files
+
+##### Encryption 
+The client side decrypt the CnC's files with symmetric key. This script was created in order to encrypt the files with the symmetric key.
+
+##### File Listener 
+A single URL listenner that returns the malicious doc that contains the malicious macro
 
 ### Prerequisites
 
@@ -52,10 +61,14 @@ In order to configurate the server there is a configuration file named [configur
 {
 	"Server": "http://Server_IP_or_DNS/",
 	"Port": 80,
+	"PrivateKey": "",
+	"Certificate": "",
 	"UUID": "Your_First-UUID_As_Clear_Text",
-	"CnCAddress": "http://CNC_IP_or_DNS/",
+	"CnCUrl": "http://CNC_IP_or_DNS/",
 	"CnCPort": 8080,
-	"MaliciousPath":"/MaliciousPath"
+	"MaliciousPath":"/MaliciousPath",
+	"DocmFile":"malicious.doc",
+	"FromAbroad": true\false
 }
 ```
 * In addition, edit the Server.py following code to be match to the C&C server headers:
@@ -90,9 +103,12 @@ In order to configurate the C&C there is a configuration file named [configurati
 {
 	"Server": "http://CNC_IP_or_DNS/",
 	"Port": 8080,
+	"PrivateKey": "",
+	"Certificate": "",
 	"UUID": "CNC_Your_Secend-UUID_As_Clear_Text",
 	"File": "main.vbs",
-	"ServerAddress": "http://Server_IP_or_DNS/"
+	"ServerAddress": "http://Server_IP_or_DNS/",
+    "FromAbroad": false\true
 }
 
 ```
@@ -116,13 +132,30 @@ The attack is executed as followed:
 In order to run a ```Default commands```, edit the ```defaultcommands.txt``` file in the C&C server folder (one line one command).
 
 In order to run a ```Commands```, edit the ```commands.txt``` file in the C&C server folder (one line one command).
-
+### Encryption
+**The client side decrypted the CnC's files with a symmetric key. The key is the same as the UUID header which means the files have to be encrypted with the UUID header as the symmetric key.**
 In order to download encrypted files:
-1. Encryp each file with the VBScript encryption script.
+1. Encryp each file with the VBScript encryption script:
+```myEncryption.vbs file.txt file.enc "The UUID header"```
 2. Copy the encrypted file to the MaliciousFiles folder in the C&C.
 3. Rename the encrypted filename to the origin name.
 
+### Installing - File Listener
 
+The server runs on Python 3.
+In order to configurate the File Listener there is a configuration file named [configuration.json]. A JSON file includes the File Listener configuration requirements:
+
+```
+{
+	"Server": "http://IP_or_DNS/",
+	"Port": 8085,
+	"PrivateKey": "",
+	"Certificate": "",
+	"DocmFile": "main.vbs",
+    "FromAbroad": false\true
+}
+
+```
 ### AV Tests
 
 We focus on spesific AV which did not recognize the attack
