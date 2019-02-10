@@ -156,6 +156,11 @@ In order to configurate the File Listener there is a configuration file named [c
 }
 
 ```
+
+### Doc VBA Obfuscation
+
+We used [Doctor Lai's VBScript Obfuscator](https://github.com/DoctorLai/VBScript_Obfuscator) in order to obfuscate the VBA script: ```client.vbs``` inside the Doc file (macro). 
+
 ### AV Tests
 
 We focus on spesific AV which did not recognize the attack
